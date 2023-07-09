@@ -1,0 +1,406 @@
+﻿@model SearchViewModel
+
+@{
+    ViewData["Title"] = "Search";
+}
+@section Style {
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap-select.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/11.0.2/css/bootstrap-slider.min.css" />
+    <style type="text/css">
+        .hidden {
+            display: none;
+        }
+    </style>
+}
+<section class="root jumbotron text-center">
+    <div class="container">
+        <partial name="_AddMealModalPartial" for="@Model.MealPlanAdd" /> @*Partial view for the add to meal plan popup*@
+        <h1 class="jumbotron-heading">Recipe Search</h1>
+        <p class="lead text-muted">Find recipes to add to your meal planner.</p>
+        <form action="javascript:void(0);" onsubmit="searchRecipes()">
+            <div class="input-group">
+                <select class="form-control selectpicker mx-sm-1 d-block" id="diet-restrictions" title="Diet Restrictions">
+                    @{
+                        var dietList = new List<string> {
+                            "Ketogenic",
+                            "Vegetarian",
+                            "Lacto-Vegetarian",
+                            "Ovo-Vegetarian",
+                            "Vegan",
+                            "Pescetarian",
+                            "Paleo",
+                            "Primal",
+                            "Whole30"
+                        };
+                    }
+                    @foreach (var diet in dietList)
+                    {
+                        bool isSelected = diet == (string)ViewData["diet"];
+                        if (isSelected)
+                        {
+                            <option value="@diet" selected>@diet</option>
+                        }
+                        else
+                        {
+                            <option value="@diet">@diet</option>
+                        }
+                    }
+                </select>
+                @*<select multiple data-style="bg-white" class="form-control selectpicker" id="intolerances" title="Intolerances">
+                        <option>Dairy</option>
+                        <option>Peanut</option>
+                        <option>Soy</option>
+                        <option>Gluten</option>
+                        <option>Wheat</option>
+                        <option>Seafood</option>
+                        <option>Shellfish</option>
+                    </select>*@
+                <select multiple data-style="bg-white" class="form-control selectpicker" id="intolerances" title="Intolerances">
+                    @{
+                        var intoleranceList = new List<string> {
+                            "Dairy",
+                            "Peanut",
+                            "Soy",
+                            "Gluten",
+                            "Wheat",
+                            "Seafood",
+                            "Shellfish"
+                        };
+                    }
+                    @foreach (var intolerance in intoleranceList)
+                    {
+                        bool isSelected = intolerance == (string)ViewData["diet"];
+                        if (isSelected)
+                        {
+                            <option value="@intolerance" selected>@intolerance</option>
+                        }
+                        else
+                        {
+                            <option value="@intolerance">@intolerance</option>
+                        }
+                    }
+                </select>
+                <input type="text" class="form-control mx-sm-1 w-50" id="search-recipes" placeholder="Search for...">
+            </div>
+            <div class="card hidden my-5" id="adv-search">
+                <div class="card-header">
+                    Advanced Search
+                </div>
+                <div class="card-body my-1">
+                    Filter calories: <b>0</b> <input id="cal-slider" type="text" class="form-control span2" value="" data-slider-min="0" data-slider-max="1500" data-slider-step="5" data-slider-value="[0,1000]" /> <b>1500 cals</b> <br /><br />
+                    Filter fats: <b>0</b> <input id="fat-slider" type="text" class="form-control span2" value="" data-slider-min="0" data-slider-max="500" data-slider-step="5" data-slider-value="[20,100]" /> <b>500g</b> <br /><br />
+                    Filter protein: <b>0</b> <input id="pro-slider" type="text" class="form-control span2" value="" data-slider-min="0" data-slider-max="500" data-slider-step="5" data-slider-value="[20,70]" /> <b>500g</b> <br /><br />
+                    Filter carbs: <b>0</b> <input id="carb-slider" type="text" class="form-control span2" value="" data-slider-min="0" data-slider-max="500" data-slider-step="5" data-slider-value="[20,70]" /> <b>500g</b>
+                    <!--Missing slider for Carbs-->
+                </div>
+            </div>
+            <p>
+                <a href="#" class="btn btn-outline-primary my-2">Go to planner</a>
+                <a href="#" id="adv-search-btn" class="btn btn-outline-primary my-2">Advanced Search</a>
+                <a href="#" id="search-btn" class="btn btn-primary my-2">Search</a>
+            </p>
+            <div class="custom-control custom-checkbox text-left">
+                <input type="checkbox" class="custom-control-input" id="personalPrefs">
+                <label class="custom-control-label" for="personalPrefs">Ignore Personal Preferences</label>
+            </div>
+        </form>
+    </div>
+</section>
+
+<div class="album py-5">
+    <div class="container">
+        <div class="row" id="search-results">
+            @*for (int i = 0; i < 9; i++) // https://getbootstrap.com/docs/4.3/components/card/
+                {
+                    <div class="col-md-4">
+                        <div class="card mb-4 shadow-sm">
+                            <img class="card-img-top" src="https://puu.sh/Hhr5S.png" alt="Card image cap">
+                            <div class="card-img-overlay">
+                                <h5 class="card-title">Test overlay</h5>
+                                <p class="card-text align-content-end">Quick Add</p>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary">View</button>
+                                        <button type="button" class="btn btn-sm btn-outline-success">Quick add</button>
+                                    </div>
+                                    <small class="text-muted">9 mins</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }*@
+        </div>
+    </div>
+</div>
+<a asp-action="Index">Back to search</a>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/lib/bootstrap/dist/js/bootstrap-select.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/11.0.2/bootstrap-slider.min.js"></script>
+    <script lang="en" type="text/javascript">
+        var reqLimit = @Model.Spoonacular.Key.RequestLimit;
+        $(document).ready(function () {
+            $('#intolerances').selectpicker();
+            $('#search-btn').click(function () {
+                console.log("Limit: " + @Model.Spoonacular.Key.RequestLimit);
+
+                // Change button html
+                $('#search-btn').html("Searching...");
+                $('#search-btn').prop('disabled', true);
+
+                //Search for meals
+                searchRecipes();
+
+                //Reset button if it fails
+                setTimeout(function () { //Just in case search fails
+                    $('#search-btn').html("Search");
+                    $('#search-btn').prop('disabled', false);
+                }, 3000);
+            });
+            $('#search-recipes').keypress((e) => {      // allows search to be initiated with the enter key
+                if (e.which === 13) { //13 is enter key
+                    // Change button html
+                    $('#search-btn').html("Searching...");
+                    $('#search-btn').prop('disabled', true);
+
+                    //Search for meals
+                    searchRecipes();
+
+                    //Reset button if it fails
+                    setTimeout(function () { //Just in case search fails
+                        $('#search-btn').html("Search");
+                        $('#search-btn').prop('disabled', false);
+                    }, 3000);
+                }
+            });
+            $('#adv-search-btn').click(function () {
+                $('#adv-search').toggleClass('hidden');
+            });
+            $("#cal-slider").slider({});
+            $("#fat-slider").slider({});
+            $("#pro-slider").slider({});
+            $("#carb-slider").slider({});
+            $("#personalPrefs").click(function () {
+                var diet = $('#diet-restrictions').val();
+                console.log("Current selected: " + diet);
+             //   $('#diet-restrictions').prop("selected", false).trigger('change');
+                $("#diet-restrictions").val('default').selectpicker("refresh");
+                $("#intolerances").val('default').selectpicker("refresh");
+            });
+
+
+            $('#addMealModal').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget);    // Button that triggered the modal
+                var id = button.data('id');             // Extract info from data-* attributes
+                var title = button.data('title');
+                var img = button.data('image');
+                // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
+                // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
+                var modal = $(this);
+                modal.find('.modal-title').text(title);
+                modal.find('#modal-recipe-id').val(id);
+                modal.find('#modal-recipe-title').val(title);
+                modal.find('#meal-image').val(cleanImageLink(img));
+            });
+            $('#addMealModal').on('hidden.bs.modal', function (event) {
+                // Destroy modal
+                console.log("KILL MODEL");
+                $(this).find('form').trigger('reset');
+            });
+            $('#save-to-planner').click(function () {
+                var btn = $('#save-to-planner');
+
+                if ($('#MealPlanAdd_Date').val().length > 0) { //date is required
+                    //Change button text
+                    btn.html("Adding...");
+                    btn.prop('disabled', true);
+                    setTimeout(function () {//Just in case it fails
+                        btn.html("Add to plan");
+                        btn.prop('disabled', false);
+                    }, 5000);
+
+                    console.log($('#MealPlanAdd_Date').val());
+                    console.log("To epoch: " + Date.parse($('#MealPlanAdd_Date').val()) / 1000);
+
+                    //Send post request
+                    $.post("/Plan/add", {
+                        'MealPlanAdd.Meal.Servings': $('#MealPlanAdd_Meal_Servings').val(),
+                        'MealPlanAdd.Slot': $('#MealPlanAdd_Slot').val(),
+                        'MealPlanAdd.Type': "RECIPE",
+                        'MealPlanAdd.Date': $('#MealPlanAdd_Date').val(),
+                        'MealPlanAdd.Meal.Id': $('#modal-recipe-id').val(),
+                        'MealPlanAdd.Meal.Title': $('#modal-recipe-title').val(),
+                        'MealPlanAdd.Meal.Image': $('#meal-image').val(),
+                        '__RequestVerificationToken': $("input[name=__RequestVerificationToken]").val()
+                    }, function (result) {
+                        console.log(result);
+                        $('#addMealModal').modal('hide');
+                        btn.html("Add to plan");
+                        btn.prop('disabled', false);
+                    });
+                }
+            });
+        });
+
+        function cleanImageLink(image_link) {
+            let array = image_link.split('/');
+            return array[array.length - 1];
+        }
+
+        function searchRecipes() {//query=burger&diet=vegetarian&excludeIngredients=coconut&intolerances=egg%2C%20gluten&number=10&offset=0&type=main%20course
+
+            //Block sending more API requests
+            if (reqLimit == 0) {
+                alert("API Search Limit reached");
+                return;
+            }
+
+            var url = 'https://spoonacular-recipe-food-nutrition-v1.p.rapidapi.com/recipes/search';             // takes 1 API request
+            var adv_url = 'https://spoonacular-recipe-food-nutrition-v1.p.rapidapi.com/recipes/complexSearch';  // takes 3 API requests 
+
+            let using_adv_search = $('#adv-search.hidden').length == 0;
+
+            var paramUrl = new URL(url);
+
+            // FIXME: needs to be configured to support the extra data. Currently images do not show
+            var adv_paramUrl = new URL(adv_url);
+            var restrictions = $("#diet-restrictions option:selected").text();
+
+            if (restrictions != "Diet Restrictions") {
+                paramUrl.searchParams.set("diet", restrictions);
+                adv_paramUrl.searchParams.set("diet", restrictions);
+            }
+
+            var intolerances = $("#intolerances option:selected").map(function () {
+                return $(this).text();
+            }).get().join(',');
+            if (intolerances != "") {
+                paramUrl.searchParams.set("intolerances", intolerances);
+                adv_paramUrl.searchParams.set("intolerances", intolerances);
+            }
+
+            //ADVANSE HEATHEN SERCH
+            if (using_adv_search) {
+                console.log("NOT HIDDEN");
+
+                // min vals are at index 0, max vals at index 1
+                let calories = $('#cal-slider').data('slider').getValue();
+                let fats = $('#fat-slider').data('slider').getValue();
+                let protein = $('#pro-slider').data('slider').getValue();
+                let carbs = $('#carb-slider').data('slider').getValue();
+
+                adv_paramUrl.searchParams.set("minCalories", calories[0]);
+                adv_paramUrl.searchParams.set("maxCalories", calories[1]);
+
+                adv_paramUrl.searchParams.set("minFat", fats[0]);
+                adv_paramUrl.searchParams.set("maxFat", fats[1]);
+
+                adv_paramUrl.searchParams.set("minProtein", protein[0]);
+                adv_paramUrl.searchParams.set("maxProtein", protein[1]);
+
+                adv_paramUrl.searchParams.set("minCarbs", carbs[0]);
+                adv_paramUrl.searchParams.set("maxCarbs", carbs[1]);
+
+                // minCalories, maxCalories, minFat, maxFat, minProtein, maxProtein << all params accepted by api
+            }
+
+            //testing
+            paramUrl.searchParams.set("addRecipeInformation", true);
+            adv_paramUrl.searchParams.set("addRecipeInformation", true);
+            paramUrl.searchParams.set("addRecipeNutrition", true);
+            adv_paramUrl.searchParams.set("addRecipeNutrition", true);
+
+            var queryString = $("#search-recipes").val();
+            //var params = { 'query': queryString, 'diet': restrictions, 'intolerances': intolerances };
+            //var params = { 'query': queryString };
+
+            //var url = 'https://spoonacular-recipe-food-nutrition-v1.p.rapidapi.com/recipes/search?' + jQuery.param(params);
+            paramUrl.searchParams.set("query", queryString);//Add query string
+            adv_paramUrl.searchParams.set("query", queryString);
+            console.log("URL: " + paramUrl);
+            const settings = {
+                "async": true,
+                "crossDomain": true,
+                "url": using_adv_search ? adv_paramUrl : paramUrl,
+                "method": "GET",
+                "headers": {
+                    "@Model.Spoonacular.Key.KeyHeader": "@Model.Spoonacular.Key.ApiKey",
+                    "@Model.Spoonacular.Key.HostHeader": "@Model.Spoonacular.Key.Host"
+                }
+            };
+
+            //Reset the results page
+            $("#search-results").empty();
+            //Check headers
+            //x-ratelimit-requests-remaining: 4991
+            //x-ratelimit-results-remaining: 19975
+            $("#search-results").append('<div class="spinner-border" role="status"><span class= "sr-only">Searching...</span ></div >');
+
+            $.ajax(settings).done(function (response, status, xhr) {
+                console.log(response); //log to browser console the api data
+                reqLimit = xhr.getResponseHeader('x-ratelimit-requests-remaining');
+                console.log("API Request limit: \t" + reqLimit + "/" + xhr.getResponseHeader('X-RateLimit-requests-Limit') +
+                    "\nAPI Result limit: \t" + xhr.getResponseHeader('x-ratelimit-results-remaining') + "/" + xhr.getResponseHeader('X-RateLimit-results-Limit'));
+                //Send API header to API
+                $.post("/Recipe/UpdateApi", { RequestLimit: reqLimit }, function (result) { console.log(result) });
+
+                //Reset buttons back to stonk
+                $('#search-btn').html("Search");
+                $('#search-btn').prop('disabled', false);
+
+                //Remove the loading html
+                $("#search-results").empty();
+
+                var searchResult = document.getElementById("search-results");
+                var results;
+                console.log("Results: " + response.totalResults);
+                if (response.totalResults === 0) {
+                    searchResult.insertAdjacentHTML('beforeend', "<h4>No results</h4>");
+                }
+                //Loop through all recipes
+                response.results.forEach(function (element) {
+                    /*
+                     * response.baseUri;
+                     * response.totalResults
+                     * element
+                     * id
+                     * image
+                     * readyinminutes
+                     * servings
+                     * sourceurl
+                     * title
+                     */
+                    console.log("Results: " + response.totalResults);
+                    results = "<div class=\"col-md-4\"> <div class=\"card mb-4 shadow-sm\"> <img class=\"card-img-top\" src="
+                        + response.baseUri + element.image + " alt=" + element.title
+                        + "> <div class=\"card-body\"> <p class=\"card-text\">"
+                        + element.title
+                        + "</p> <div class=\"d-flex justify-content-between align-items-center\"> <div class=\"btn-group\"> <a target='_blank' href=\"/recipe/details/"
+                        + element.id
+                        + "\" class=\"btn btn-sm btn-outline-primary\">View</a> <button type=\"button\" data-toggle=\"modal\" data-target=\"#addMealModal\" data-id="
+                        + JSON.stringify(element.id) + " data-title=" + JSON.stringify(element.title) + " data-image=" + element.image
+                        + " + class=\"btn btn-sm btn-outline-success\">Quick add</button> </div> <small class=\"text-muted\">Ready in "
+                        + element.readyInMinutes + " mins</small> </div> </div> </div> </div>";
+
+                    if (using_adv_search) {
+                        results = "<div class=\"col-md-4\"> <div class=\"card mb-4 shadow-sm\"> <img class=\"card-img-top\" src="
+                            + element.image + " alt=" + element.title
+                            + "> <div class=\"card-body\"> <p class=\"card-text\">"
+                            + element.title
+                            + "</p> <div class=\"d-flex justify-content-between align-items-center\"> <div class=\"btn-group\"> <a target='_blank' href=\"/recipe/details/"
+                            + element.id
+                            + "\" class=\"btn btn-sm btn-outline-primary\">View</a> <button type=\"button\" data-toggle=\"modal\" data-target=\"#addMealModal\" data-id="
+                            + JSON.stringify(element.id) + " data-title=" + JSON.stringify(element.title) + " data-image=" + element.image
+                            + " + class=\"btn btn-sm btn-outline-success\">Quick add</button> </div> <small class=\"text-muted\">Ready in "
+                            + element.readyInMinutes + " mins</small> </div> </div> </div> </div>";
+                    }
+                    //Insert to page HTML
+                    searchResult.insertAdjacentHTML('beforeend', results);
+                });
+            });
+        }
+    </script>
+}

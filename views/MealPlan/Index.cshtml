@@ -1,0 +1,160 @@
+﻿@using Microsoft.AspNetCore.Identity
+@inject UserManager<UserModel> UserManager
+@{
+    ViewData["Title"] = "Meal Plan";
+}
+
+<section class="root jumbotron text-center">
+    <div class="container">
+        <h1 class="jumbotron-heading">Meal Planning</h1>
+        <p class="lead text-muted">Macros for each day are displayed</p>
+        <div id="macros" class="row"></div>
+        <div class="album py-5">
+            <div class="container">
+                <div id="saved-output" class="row"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<a asp-action="Index">Back to top</a>
+
+@section Scripts {
+    <script lang="en" type="text/javascript">
+        var user = "@UserManager.GetUserAsync(User).Result.SpoonAccount.Username";
+        var hash = "@UserManager.GetUserAsync(User).Result.SpoonAccount.Hash";
+        var key = "@UserManager.GetUserAsync(User).Result.SpoonAccount.ApiKey";
+
+        $(document).ready(function () {
+            getWeekPlan();
+        });
+
+        function sendPostData() {
+            var url = 'https://api.spoonacular.com/mealplanner/' + user + '/items?apiKey=' + key + '&hash=' + hash;
+            var d = new Date();
+            var offset = d.getTimezoneOffset() * 60 * (-1);              // get user's offset from UTC in minutes, convert to seconds
+            var object = {
+                "date": (Math.floor(Date.now() / 1000) + offset),        // API uses seconds, Date.now() gives in milliseconds
+                "slot": 1,
+                "position": 0,
+                "type": "RECIPE",
+                "value": {
+                    "title": "Random title"+getRandomInt(40000),
+                    "id": getRandomInt(40000),
+                    "servings": 2,
+                }
+            };
+
+            $.post(url, JSON.stringify(object),
+                function (result) {
+                    console.log("Add Result: " + JSON.stringify(result));
+                    $("#output").append(JSON.stringify(result));
+                });
+        }
+
+        function getRandomInt(max) {
+            return Math.floor(Math.random() * Math.floor(max));
+        }
+
+        function setToMonday(date) {
+            console.log("Date before: " + date);
+            var day = date.getDay() || 7;
+            if (day !== 1)
+                date.setHours(-24 * (day - 1));
+            return date;
+        }
+
+        function deleteMeal(id) {
+            console.log(id);
+            $.ajax({
+                url: "https://api.spoonacular.com/mealplanner/" + user + "/items/" + id + "?hash=" + hash + "&apiKey=" + key,
+                method: 'delete',
+                success: function (result) {
+                    console.log(JSON.stringify(result));
+                    var del = $('#meal-' + id);
+                    del.remove();
+                    //var element = $('#delete-recipe-' + id).parent();
+                    //element.remove('.card-body');
+                }
+            });
+        }
+
+        function getWeekPlan() {
+            var date = setToMonday(new Date(Math.floor(Date.now()))); //Get the monday date from the current day of the week
+            console.log("New date: " + date + " Day: " + date.getDate());
+            var year = date.getFullYear();
+            var month = date.getMonth() + 1;
+            var day = date.getDate();
+            var YMD = year + "-" + month + "-" + day;
+            var url = 'https://api.spoonacular.com/mealplanner/' + user + '/week/' + YMD + '?apiKey=' + key + '&hash=' + hash;
+
+            $.get(url, null,
+                function (result) {
+                    console.log("Get Result: " + JSON.stringify(result));
+                    if (result.days.length == 0)
+                        $("#saved-output").append("<h4><a href='/Recipe'>You currently do not have a meal plan. Start building one here.</a></h4>")
+
+                    result.days.forEach(function (day) {
+                        $("<div/>").attr('id', 'm' + day.day).appendTo('#macros'); //[Macros] Create div for each day    
+                        //Create card for macros
+                        var macroCard = '<div class="col-sm"><div class="card" style="width: 11rem;"><div class="card-header">' + day.day + '</div ><div class="card-body" id=c' + day.day + '></div></div></div>';
+                        $("#m" + day.day).append(macroCard);
+
+                        //Display macros
+                        day.nutritionSummary.nutrients.forEach(function (macro) {
+                            $('#c' + day.day).append("<span class='badge badge-secondary'> " + macro.title + ": " + macro.amount + macro.unit + "</span> ");
+                        });
+                        console.log("Day: " + day.day);
+
+                        //[Meals] Create div for each day
+                        $("<div/>").attr('id', 'p' + day.day).appendTo('#saved-output'); //Create div for each day
+
+                        //Create card of the day
+                        var dayCard = '<div class="col-sm"><div class="card" style="width: 18rem;">' +
+                            '<div class="card-header">' +
+                                day.day +
+                            '</div>' +
+                            '<ul class="list-group list-group-flush" id=d' + day.day +'></ul></div></div>';
+                            $("#p" + day.day).append(dayCard); //start the day card
+
+                            //Display meals
+                        day.items.forEach(function (item, index) {
+                            console.log("Length: " + day.items.length);
+                            console.log("Current index: " + index);
+                            //var add = '<li class="list-group-item">' + item.value.title + '</li>';
+
+                            res = //'<div class="card mb-4 shadow-sm" style="width: 18rem;">' +
+                                '<div id="meal-' + item.id + '"><img class="card-img-top" src="https://spoonacular.com/recipeImages/' + item.value.image + '" alt="' + item.value.title + '">' + 
+                                //'<div class="card-body" id="' + item.id + '">' +
+                                '<div class="card-body">' +
+                                '<h5 class="card-title"><a href="/recipe/details/' + item.value.id + '" target="_blank">' + item.value.title + '</a></h5>' +
+                                '<h6 class="card-subtitle mb-2 text-muted">' + 'Servings: ' + item.value.servings + '</h6>' +
+                                '<p class="card-text">' + mealType(item.slot) + '</p>' +
+                               // '</div>' +
+                                '<button class="btn btn-outline-danger btn-sm" id="delete-recipe-' + item.id + '" onclick="deleteMeal(' + item.id + ')">Delete</button></div></div>';
+
+                            //Append results to the card
+                            $("#d" + day.day).append(res);
+                        });
+                    });
+                });
+        }
+
+        function mealType(id) {
+            let result = ({
+                1: 'Breakfast',
+                2: 'Lunch',
+                3: 'Dinner'
+            })[id] ?? 'Lunch'
+            return result;
+        }
+
+        function AddDataForUser() {
+            $.post("/Plan/Add", { Id: 1},
+                function (result) {
+                    console.log("Add Result: " + JSON.stringify(result));
+                    $("#output").append(JSON.stringify(result));
+                });
+        }
+    </script>
+}

@@ -1,0 +1,254 @@
+﻿@model Meal_Planner.Models.RecipeMealPlanModel
+
+@{
+    ViewData["Title"] = Model.Recipe.Title;
+}
+
+<div>
+    <div class="float-right">
+        <button type="button" data-toggle="modal" data-target="#addMealModal" data-id="@Model.Recipe.Id" data-title="@Model.Recipe.Title" class="btn btn-outline-primary">Add to Meal Plan</button>
+    </div>
+    <h4>@ViewData["Title"]</h4>
+    <hr />
+    <div class="container">
+        <partial name="_AddMealModalPartial" for="@Model.MealPlanAdd" />
+        <div class="row">
+            <div class="col">
+                <img id="recipeImg" class="img-fluid" src="https://via.placeholder.com/750" />
+                <br /><br />
+                <h3>Ingredients</h3>
+                <br />
+                <dl>
+                    <dd class="col-sm-10">
+                        @*@Html.DisplayFor(model => model.ExtendedIngredients)*@
+                        <ol>
+                            @foreach (var item in @Model.Recipe.ExtendedIngredients)
+                            {
+                                <li>@item.Name</li>
+                            }
+                        </ol>
+                    </dd>
+                </dl>
+            </div>
+            <div class="col">
+                <h5>Recipe Nutrition Breakdown</h5>
+                <div id="test1"></div>
+                <pre id="spoonacular-ingredients" style="display:none"></pre>
+                <div id="spoonacular-nutrition-visualizer" style="display:none"></div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+    <!--        Left for refrence
+    <h3>Ingredients</h3>
+    <br />
+    <dl class="row">
+         <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.Id)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.Id)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.Title)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.Title)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.Image)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.Image)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.Servings)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.Servings)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.ReadyInMinutes)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.ReadyInMinutes)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.SourceName)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.SourceName)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.SourceUrl)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.SourceUrl)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.AggregateLikes)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.AggregateLikes)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.HealthScore)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.HealthScore)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.PricePerServing)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.PricePerServing)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.DairyFree)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.DairyFree)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.GlutenFree)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.GlutenFree)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.Vegan)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.Vegan)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.Vegetarian)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.Vegetarian)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.Ketogenic)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.Ketogenic)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Recipe.ExtendedIngredients)
+           </dt>-->
+
+    <h3>Directions</h3>
+    <br />
+    <dl>
+        <!--<dt class="col-sm-2">
+        @Html.DisplayNameFor(model => model.Recipe.Instructions)
+        </dt>-->
+
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Recipe.Instructions)
+        </dd>
+
+    </dl>
+</div>
+
+<div>
+    <a asp-action="Index">New Search</a>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://spoonacular.com/cdn/spoonacular-1.6.min.js"></script>
+    <script type="text/javascript">
+        var spoonacularServings = 1;
+
+        $(document).ready(function () {
+            $('#addMealModal').on('show.bs.modal', function () {
+                var id = @Model.Recipe.Id;
+                var title = "@Model.Recipe.Title";
+                var img = "@Model.Recipe.Image";
+                // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
+                // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
+                var modal = $(this);
+                modal.find('.modal-title').text(title);
+                modal.find('#modal-recipe-id').val(id);
+                modal.find('#modal-recipe-title').val(title);
+                modal.find('#meal-image').val(cleanImageLink(img));
+            });
+            $('#addMealModal').on('hidden.bs.modal', function (event) {
+                // Destroy modal
+                console.log("KILL MODEL");
+                $(this).find('form').trigger('reset');
+            });
+            $('#save-to-planner').click(function () {
+                var btn = $('#save-to-planner');
+
+                if ($('#MealPlanAdd_Date').val().length > 0) { //date is required
+                    //Change button text
+                    btn.html("Adding...");
+                    btn.prop('disabled', true);
+                    setTimeout(function () {//Just in case it fails
+                        btn.html("Add to plan");
+                        btn.prop('disabled', false);
+                    }, 5000);
+
+                    console.log($('#MealPlanAdd_Date').val());
+                    console.log("To epoch: " + Date.parse($('#MealPlanAdd_Date').val()) / 1000);
+
+                    //Send post request
+                    $.post("/Plan/add", {
+                        'MealPlanAdd.Meal.Servings': $('#MealPlanAdd_Meal_Servings').val(),
+                        'MealPlanAdd.Slot': $('#MealPlanAdd_Slot').val(),
+                        'MealPlanAdd.Type': "RECIPE",
+                        'MealPlanAdd.Date': $('#MealPlanAdd_Date').val(),
+                        'MealPlanAdd.Meal.Id': $('#modal-recipe-id').val(),
+                        'MealPlanAdd.Meal.Title': $('#modal-recipe-title').val(),
+                        'MealPlanAdd.Meal.Image': $('#meal-image').val(),
+                        '__RequestVerificationToken': $("input[name=__RequestVerificationToken]").val()
+                    }, function (result) {
+                        console.log(result);
+                        $('#addMealModal').modal('hide');
+                        btn.html("Add to plan");
+                        btn.prop('disabled', false);
+                    });
+                }
+            });
+
+            function cleanImageLink(image_link) {
+                let array = image_link.split('/');
+                return array[array.length - 1];
+            }
+
+            function GetNutritionVisual() {
+                const settings = {
+                    "async": true,
+                    "crossDomain": true,
+                    "url": "https://spoonacular-recipe-food-nutrition-v1.p.rapidapi.com/recipes/" + @Model.Recipe.Id + "/nutritionWidget",
+                    "method": "GET",
+                    "headers": {
+                        "accept": "text/html",
+                        "x-rapidapi-key": "233fcd5469msh50148c2c9897d40p10f14cjsneaa6c8580ee8",
+                        "x-rapidapi-host": "spoonacular-recipe-food-nutrition-v1.p.rapidapi.com"
+                    }
+                };
+
+                $.ajax(settings).done(function (response) {
+                    console.log(response); //log to browser console the api data
+
+                    var recipeImg = '@Model.Recipe.Image';
+                    $('#recipeImg').attr('src', recipeImg);     //replace placeholder image src attribute with recipeImg
+                    $("#test1").append(response);               //inject response result into
+                });
+
+                function htmlDecode(input) {
+                    var doc = new DOMParser().parseFromString(input, "text/html");
+                    return doc.documentElement.textContent;
+                }
+
+                $("#instructions").append(htmlDecode("@Model.Recipe.Instructions"));   //inject response result into
+            }
+            GetNutritionVisual();
+            //htmlDecode();   // FIXME: format recipe instructions
+        });
+    </script>
+}
